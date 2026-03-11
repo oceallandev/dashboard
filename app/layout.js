@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Dashboard VM",
-  description: "Dashboard cu auth + Stripe + webhook-uri VM"
+  title: "Nebula VM Dashboard",
+  description: "Dashboard SaaS complet: auth, Stripe subscriptions, webhook-uri și VM orchestration."
 };
 
 export default function RootLayout({ children }) {

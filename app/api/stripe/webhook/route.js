@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { addProcessedStripeEvent, hasProcessedStripeEvent } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 import { createVmForUser, deleteVmForUser } from "@/lib/vm";
-import { findUserById, findUserByStripeCustomerId, updateUser } from "@/lib/users";
+import {
+  findUserById,
+  findUserByStripeCustomerId,
+  findUserByStripeSubscriptionId,
+  updateUser
+} from "@/lib/users";
 
 async function parseStripeEvent(request) {
   const rawBody = await request.text();
@@ -51,22 +56,37 @@ async function handleCheckoutCompleted(session) {
 
 async function handleSubscriptionUpdated(subscription) {
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
-  if (!customerId) return;
+  const subscriptionId = typeof subscription.id === "string" ? subscription.id : null;
+  if (!customerId && !subscriptionId) return;
 
-  const user = await findUserByStripeCustomerId(customerId);
+  let user = null;
+  if (customerId) {
+    user = await findUserByStripeCustomerId(customerId);
+  }
+  if (!user && subscriptionId) {
+    user = await findUserByStripeSubscriptionId(subscriptionId);
+  }
   if (!user) return;
 
   await updateUser(user.id, {
-    stripeSubscriptionId: subscription.id || user.stripeSubscriptionId,
+    stripeCustomerId: customerId || user.stripeCustomerId,
+    stripeSubscriptionId: subscriptionId || user.stripeSubscriptionId,
     subscriptionStatus: subscription.status || user.subscriptionStatus
   });
 }
 
 async function handleSubscriptionDeleted(subscription) {
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
-  if (!customerId) return;
+  const subscriptionId = typeof subscription.id === "string" ? subscription.id : null;
+  if (!customerId && !subscriptionId) return;
 
-  const user = await findUserByStripeCustomerId(customerId);
+  let user = null;
+  if (customerId) {
+    user = await findUserByStripeCustomerId(customerId);
+  }
+  if (!user && subscriptionId) {
+    user = await findUserByStripeSubscriptionId(subscriptionId);
+  }
   if (!user) return;
 
   const updated = await updateUser(user.id, {
@@ -91,6 +111,18 @@ async function handleInvoicePaymentFailed(invoice) {
   });
 }
 
+async function handleInvoicePaid(invoice) {
+  const customerId = typeof invoice.customer === "string" ? invoice.customer : null;
+  if (!customerId) return;
+
+  const user = await findUserByStripeCustomerId(customerId);
+  if (!user) return;
+
+  await updateUser(user.id, {
+    subscriptionStatus: "active"
+  });
+}
+
 export async function POST(request) {
   try {
     const event = await parseStripeEvent(request);
@@ -111,6 +143,9 @@ export async function POST(request) {
         break;
       case "invoice.payment_failed":
         await handleInvoicePaymentFailed(event.data.object);
+        break;
+      case "invoice.paid":
+        await handleInvoicePaid(event.data.object);
         break;
       default:
         break;

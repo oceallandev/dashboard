@@ -13,23 +13,12 @@ export default function DashboardActions({ hasCustomer }) {
   const startCheckout = async () => {
     setCheckoutLoading(true);
     setError("");
-
     try {
-      const response = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST"
-      });
+      const response = await fetch("/api/stripe/create-checkout-session", { method: "POST" });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Checkout indisponibil.");
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      throw new Error("Nu am primit URL-ul de checkout.");
+      if (!response.ok) throw new Error(data.error || "Checkout indisponibil.");
+      if (!data.url) throw new Error("Nu am primit URL-ul de checkout.");
+      window.location.href = data.url;
     } catch (err) {
       setError(err.message);
       setCheckoutLoading(false);
@@ -39,23 +28,12 @@ export default function DashboardActions({ hasCustomer }) {
   const openBillingPortal = async () => {
     setPortalLoading(true);
     setError("");
-
     try {
-      const response = await fetch("/api/stripe/create-portal-session", {
-        method: "POST"
-      });
+      const response = await fetch("/api/stripe/create-portal-session", { method: "POST" });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Portalul de billing nu e disponibil.");
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      throw new Error("Nu am primit URL-ul portalului.");
+      if (!response.ok) throw new Error(data.error || "Portal indisponibil.");
+      if (!data.url) throw new Error("Nu am primit URL pentru portal.");
+      window.location.href = data.url;
     } catch (err) {
       setError(err.message);
       setPortalLoading(false);
@@ -65,7 +43,6 @@ export default function DashboardActions({ hasCustomer }) {
   const logout = async () => {
     setLogoutLoading(true);
     setError("");
-
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
@@ -78,19 +55,18 @@ export default function DashboardActions({ hasCustomer }) {
 
   return (
     <>
-      {error && <div className="alert alert-error">{error}</div>}
-
-      <div className="btn-row">
-        <button className="btn-primary" onClick={startCheckout} disabled={checkoutLoading}>
-          {checkoutLoading ? "Redirecționez..." : "Plătește cu Stripe"}
+      {error && <div className="alert error">{error}</div>}
+      <div className="button-row">
+        <button className="btn btn-brand" onClick={startCheckout} disabled={checkoutLoading}>
+          {checkoutLoading ? "Deschid checkout..." : "Upgrade / Subscribe"}
         </button>
         {hasCustomer && (
-          <button className="btn-muted" onClick={openBillingPortal} disabled={portalLoading}>
-            {portalLoading ? "Deschid..." : "Manage billing"}
+          <button className="btn btn-dark" onClick={openBillingPortal} disabled={portalLoading}>
+            {portalLoading ? "Deschid portal..." : "Manage billing"}
           </button>
         )}
-        <button className="btn-danger" onClick={logout} disabled={logoutLoading}>
-          {logoutLoading ? "Ies..." : "Logout"}
+        <button className="btn btn-danger" onClick={logout} disabled={logoutLoading}>
+          {logoutLoading ? "Se închide sesiunea..." : "Logout"}
         </button>
       </div>
     </>

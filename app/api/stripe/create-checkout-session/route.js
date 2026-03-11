@@ -43,9 +43,18 @@ export async function POST(request) {
       success_url: `${appUrl}/dashboard?success=1`,
       cancel_url: `${appUrl}/dashboard?canceled=1`,
       customer: customerId,
+      customer_update: {
+        address: "auto",
+        name: "auto"
+      },
       client_reference_id: user.id,
       metadata: {
         userId: user.id
+      },
+      subscription_data: {
+        metadata: {
+          userId: user.id
+        }
       }
     });
 

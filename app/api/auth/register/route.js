@@ -2,20 +2,16 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { authCookieOptions, signAuthToken, TOKEN_COOKIE } from "@/lib/auth";
 import { createUser, findUserByEmail, publicUser } from "@/lib/users";
+import { registerSchema } from "@/lib/validators";
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const email = String(body?.email || "").trim().toLowerCase();
-    const password = String(body?.password || "");
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email și parolă sunt obligatorii." }, { status: 400 });
+    const parsed = registerSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || "Date invalide." }, { status: 400 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Parola trebuie să aibă minim 6 caractere." }, { status: 400 });
-    }
+    const { email, password } = parsed.data;
 
     const existing = await findUserByEmail(email);
     if (existing) {

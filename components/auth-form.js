@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function AuthForm({ mode }) {
   const router = useRouter();
@@ -12,6 +12,16 @@ export default function AuthForm({ mode }) {
   const [error, setError] = useState("");
 
   const isLogin = mode === "login";
+
+  const passwordChecks = useMemo(
+    () => ({
+      min: password.length >= 8,
+      upper: /[A-Z]/.test(password),
+      lower: /[a-z]/.test(password),
+      digit: /\d/.test(password)
+    }),
+    [password]
+  );
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -26,7 +36,6 @@ export default function AuthForm({ mode }) {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || "A apărut o eroare.");
       }
@@ -41,55 +50,92 @@ export default function AuthForm({ mode }) {
   };
 
   return (
-    <div className="page-wrap">
-      <div className="card">
-        <h1 className="title">{isLogin ? "Login" : "Register"}</h1>
-        <p className="subtitle">
-          {isLogin
-            ? "Intră în dashboard și gestionează abonamentul."
-            : "Creează contul pentru a începe."}
-        </p>
+    <main className="page-shell">
+      <div className="layout-wrap">
+        <div className="top-nav">
+          <div className="logo">
+            <span className="logo-dot" />
+            Nebula VM
+          </div>
+          <div className="nav-actions">
+            <Link className="btn btn-dark" href="/">
+              Acasă
+            </Link>
+          </div>
+        </div>
 
-        <form onSubmit={onSubmit} className="stack">
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="nume@email.com"
-              autoComplete="email"
-              required
-            />
-          </label>
+        <section className="glass-panel auth-panel">
+          <h1 className="hero-title">{isLogin ? "Intră în cont" : "Creează cont nou"}</h1>
+          <p className="subtitle">
+            {isLogin
+              ? "Accesează dashboard-ul, gestionează abonamentul și monitorizează webhook-urile VM."
+              : "Înregistrare rapidă cu reguli de securitate pentru parolă."}
+          </p>
 
-          <label>
-            Parolă
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="minim 6 caractere"
-              autoComplete={isLogin ? "current-password" : "new-password"}
-              minLength={6}
-              required
-            />
-          </label>
+          <form className="form-stack" onSubmit={onSubmit}>
+            <label>
+              Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="nume@domeniu.com"
+                autoComplete="email"
+                required
+              />
+            </label>
 
-          {error && <div className="alert alert-error">{error}</div>}
+            <label>
+              Parolă
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={isLogin ? "Parola contului tău" : "minim 8 caractere, Aa1"}
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                minLength={isLogin ? 1 : 8}
+                required
+              />
+            </label>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "Se procesează..." : isLogin ? "Login" : "Create account"}
-          </button>
-        </form>
+            {!isLogin && (
+              <div className="badges">
+                <span className="badge">
+                  <span className={`badge-dot ${passwordChecks.min ? "success" : "warning"}`} />
+                  minim 8
+                </span>
+                <span className="badge">
+                  <span className={`badge-dot ${passwordChecks.upper ? "success" : "warning"}`} />
+                  literă mare
+                </span>
+                <span className="badge">
+                  <span className={`badge-dot ${passwordChecks.lower ? "success" : "warning"}`} />
+                  literă mică
+                </span>
+                <span className="badge">
+                  <span className={`badge-dot ${passwordChecks.digit ? "success" : "warning"}`} />
+                  cifră
+                </span>
+              </div>
+            )}
 
-        <p className="subtitle" style={{ marginTop: 18 }}>
-          {isLogin ? "Nu ai cont?" : "Ai deja cont?"}{" "}
-          <Link href={isLogin ? "/register" : "/login"} className="inline-link">
-            {isLogin ? "Înregistrează-te" : "Mergi la login"}
-          </Link>
-        </p>
+            {error && <div className="alert error">{error}</div>}
+
+            <div className="button-row">
+              <button className="btn btn-brand" type="submit" disabled={loading}>
+                {loading ? "Se procesează..." : isLogin ? "Login" : "Create account"}
+              </button>
+              <Link href={isLogin ? "/register" : "/login"} className="btn btn-dark">
+                {isLogin ? "Nu am cont" : "Am deja cont"}
+              </Link>
+            </div>
+          </form>
+
+          <p className="subtitle" style={{ marginTop: 10 }}>
+            Poți reveni oricând la <Link className="inline-link" href="/">pagina principală</Link>.
+          </p>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

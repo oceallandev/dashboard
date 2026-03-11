@@ -1,76 +1,65 @@
-# Dashboard Next.js (Template-style SaaS: Auth + Stripe + VM Webhooks)
+# Nebula VM Dashboard
 
-Interfață inspirată din template-urile Vercel pentru SaaS/Stripe, cu:
-- `register/login/logout` funcțional
-- dashboard protejat
-- pagini `Home` și `Pricing`
-- Stripe Checkout + Billing Portal
-- webhook Stripe pentru create/delete VM cu idempotency pe `event.id`
+Dashboard SaaS în Next.js cu:
+- auth complet (`register/login/logout`) cu cookie JWT
+- Stripe Checkout subscriptions + Billing Portal
+- webhook lifecycle pentru provisioning/deprovisioning VM
+- idempotency pentru evenimente Stripe
+- activity timeline VM și system health badges
+- UI premium glass/marble (responsive desktop + mobile)
 
-## 1) Instalare
+## Setup local
 
 ```bash
 npm install
 cp .env.example .env.local
-```
-
-Completează `.env.local`:
-- `AUTH_SECRET` (obligatoriu)
-- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` (pentru checkout)
-- `STRIPE_WEBHOOK_SECRET` (opțional; dacă îl setezi, webhook-ul validează semnătura Stripe)
-- `VM_CREATE_WEBHOOK_URL`, `VM_DELETE_WEBHOOK_URL` (opțional; dacă nu le setezi, evenimentele se salvează local în `data/vm-events.json`)
-
-## 2) Rulare
-
-```bash
 npm run dev
 ```
 
-Aplicația pornește pe `http://localhost:3000`.
+Aplicația rulează implicit pe `http://localhost:3000`.
 
-Dacă vrei exact ca în exemplul tău pe port 5000:
+## Variabile de mediu
 
-```bash
-PORT=5000 npm run dev
-```
+Obligatorii pentru producție:
+- `AUTH_SECRET`
 
-## 3) Rute UI
+Necesare pentru Stripe billing:
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET` (recomandat puternic în production)
 
-- `GET /` (landing)
-- `GET /pricing`
-- `GET /login`
-- `GET /register`
-- `GET /dashboard` (protejat)
+Opționale pentru provisioning extern VM:
+- `VM_CREATE_WEBHOOK_URL`
+- `VM_DELETE_WEBHOOK_URL`
 
-## 4) Flux auth
+Fără VM webhooks externe, evenimentele VM sunt logate local în `data/vm-events.json`.
 
-- API:
-  - `POST /api/auth/register`
-  - `POST /api/auth/login`
-  - `POST /api/auth/logout`
-  - `GET /api/auth/me`
+## Rute principale
 
-Utilizatorii sunt salvați local în `data/users.json`.
+UI:
+- `/`
+- `/pricing`
+- `/login`
+- `/register`
+- `/dashboard`
 
-## 5) Flux Stripe
-
-- dashboard:
-  - `POST /api/stripe/create-checkout-session`
-  - `POST /api/stripe/create-portal-session`
-- Stripe trimite evenimente la webhook:
-  - `checkout.session.completed` => create VM
-  - `customer.subscription.deleted` => delete VM
-
-Webhook disponibil pe ambele rute:
+API:
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `POST /api/stripe/create-checkout-session`
+- `POST /api/stripe/create-portal-session`
 - `POST /api/stripe/webhook`
 - `POST /webhook`
+- `GET /api/system/status`
 
-## 6) Test rapid webhook (fără semnătură)
+## Webhook test (dev mode, fără semnătură)
 
-Funcționează dacă `STRIPE_WEBHOOK_SECRET` NU este setat:
+Dacă `STRIPE_WEBHOOK_SECRET` nu este setat:
 
 ```bash
-curl -X POST http://localhost:5000/webhook \
+curl -X POST http://localhost:3000/webhook \
   -H "Content-Type: application/json" \
   -d '{
     "type": "customer.subscription.deleted",
@@ -82,8 +71,9 @@ curl -X POST http://localhost:5000/webhook \
   }'
 ```
 
-## 7) Ce urmează
+## Calitate
 
-- Legi `VM_CREATE_WEBHOOK_URL` și `VM_DELETE_WEBHOOK_URL` la serviciul tău real de provisioning/deprovisioning VM.
-- Adaugi planuri multiple Stripe (mai multe `price_id`).
-- Migrezi stocarea utilizatorilor din JSON într-o bază de date (PostgreSQL + Prisma).
+```bash
+npm run lint
+npm run build
+```

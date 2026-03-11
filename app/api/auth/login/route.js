@@ -2,17 +2,16 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { authCookieOptions, signAuthToken, TOKEN_COOKIE } from "@/lib/auth";
 import { findUserByEmail, publicUser } from "@/lib/users";
+import { loginSchema } from "@/lib/validators";
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const email = String(body?.email || "").trim().toLowerCase();
-    const password = String(body?.password || "");
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email și parolă sunt obligatorii." }, { status: 400 });
+    const parsed = loginSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Credentiale invalide." }, { status: 400 });
     }
 
+    const { email, password } = parsed.data;
     const user = await findUserByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "Credentiale invalide." }, { status: 401 });
