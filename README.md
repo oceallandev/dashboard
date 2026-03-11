@@ -2,6 +2,7 @@
 
 Dashboard SaaS în Next.js cu:
 - auth complet (`register/login/logout`) cu cookie JWT
+- login social cu Google OAuth2
 - Stripe Checkout subscriptions + Billing Portal
 - webhook lifecycle pentru provisioning/deprovisioning VM
 - idempotency pentru evenimente Stripe
@@ -32,7 +33,21 @@ Opționale pentru provisioning extern VM:
 - `VM_CREATE_WEBHOOK_URL`
 - `VM_DELETE_WEBHOOK_URL`
 
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
 Fără VM webhooks externe, evenimentele VM sunt logate local în `data/vm-events.json`.
+
+## Setup Google Login
+
+1. În Google Cloud Console creezi OAuth 2.0 Client (Web application).
+2. Adaugi Authorized redirect URI:
+   - local: `http://localhost:3000/api/auth/google/callback`
+   - producție: `https://dashboard-ai-chi.vercel.app/api/auth/google/callback`
+3. Setezi în `.env.local` / Vercel:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+4. Repornești aplicația.
 
 ## Rute principale
 
@@ -48,6 +63,8 @@ API:
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+- `GET /api/auth/google/start`
+- `GET /api/auth/google/callback`
 - `POST /api/stripe/create-checkout-session`
 - `POST /api/stripe/create-portal-session`
 - `POST /api/stripe/webhook`

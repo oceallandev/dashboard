@@ -1,17 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 export default function AuthForm({ mode }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isLogin = mode === "login";
+  const oauthError = searchParams.get("error");
+
+  const oauthMessage = useMemo(() => {
+    if (!oauthError) return "";
+    switch (oauthError) {
+      case "google_not_configured":
+        return "Login Google nu este configurat încă (lipsesc variabilele GOOGLE_CLIENT_ID/SECRET).";
+      case "google_access_denied":
+        return "Autorizarea Google a fost anulată.";
+      case "google_invalid_state":
+        return "Sesiunea Google este invalidă sau expirată. Încearcă din nou.";
+      case "google_login_failed":
+        return "Autentificarea Google a eșuat. Încearcă din nou.";
+      default:
+        return "A apărut o eroare la autentificarea socială.";
+    }
+  }, [oauthError]);
 
   const passwordChecks = useMemo(
     () => ({
@@ -119,12 +137,15 @@ export default function AuthForm({ mode }) {
               </div>
             )}
 
-            {error && <div className="alert error">{error}</div>}
+            {(error || oauthMessage) && <div className="alert error">{error || oauthMessage}</div>}
 
             <div className="button-row">
               <button className="btn btn-brand" type="submit" disabled={loading}>
                 {loading ? "Se procesează..." : isLogin ? "Login" : "Create account"}
               </button>
+              <Link href="/api/auth/google/start?next=/dashboard" className="btn btn-dark">
+                Continuă cu Google
+              </Link>
               <Link href={isLogin ? "/register" : "/login"} className="btn btn-dark">
                 {isLogin ? "Nu am cont" : "Am deja cont"}
               </Link>
